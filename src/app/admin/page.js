@@ -1,7 +1,15 @@
 "use client";
+"use client";
+export const dynamic = "force-dynamic";
+export const fetchCache = "force-no-store";
+export const revalidate = 0;
+export const dynamicParams = true;
+export const preferredRegion = "auto";
+export const runtime = "edge"; // ✅ ← Vercelで安定動作する
+
 import { useEffect, useRef, useState } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
-import { saveAutoBackup } from "@/utils/backup"; // ✅ Supabaseバックアップ機能を利用
+import { saveAutoBackup } from "@/utils/backup";
 
 /** 選択肢を常に5つに整える関数 */
 function normalizeOptions(opts) {
