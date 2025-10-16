@@ -1,11 +1,4 @@
 "use client";
-"use client";
-export const dynamic = "force-dynamic";
-export const fetchCache = "force-no-store";
-export const revalidate = false;
-export const dynamicParams = true;
-export const preferredRegion = "auto";
-export const runtime = "edge"; // ✅ ← Vercelで安定動作する
 
 import { useEffect, useRef, useState } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
@@ -47,21 +40,26 @@ export default function AdminPage() {
 
     (async () => {
       try {
-       const baseUrl =
-         process.env.NEXT_PUBLIC_SITE_URL || "https://quiz-app-maple-final.vercel.app";
-       const base = await fetch(`${baseUrl}/questions.json`, { cache: "no-store" })
-        .then((r) => r.json())
-        .catch(() => []);
-        const custom = JSON.parse(localStorage.getItem("customQuestions") || "[]");
-        const all = [...base, ...custom];
+        const baseUrl =
+          process.env.NEXT_PUBLIC_SITE_URL || "https://quiz-app-maple-final.vercel.app";
+        const base = await fetch(`${baseUrl}/questions.json`, { cache: "no-store" })
+          .then((r) => r.json())
+          .catch(() => []);
 
+        let custom = [];
+        if (typeof window !== "undefined") {
+          custom = JSON.parse(localStorage.getItem("customQuestions") || "[]");
+        }
+
+        const all = [...base, ...custom];
         let picked = null;
+
         if (editIdParam) {
           const idNum = Number(editIdParam);
           picked = all.find((q) => Number(q.id) === idNum) || null;
         }
 
-        if (!picked) {
+        if (!picked && typeof window !== "undefined") {
           const blob = localStorage.getItem("editQuestionData");
           if (blob) {
             try {
@@ -127,6 +125,7 @@ export default function AdminPage() {
     if (!Array.isArray(form.options) || !form.options.filter((s) => s?.trim()).length)
       return alert("少なくとも1つの選択肢を入力してください");
 
+    if (typeof window === "undefined") return;
     const stored = JSON.parse(localStorage.getItem("customQuestions") || "[]");
     let updated;
 
@@ -148,13 +147,14 @@ export default function AdminPage() {
     }
 
     localStorage.setItem("customQuestions", JSON.stringify(updated));
-    saveAutoBackup(); // ✅ Supabaseへ自動バックアップ
+    saveAutoBackup();
     setIsEditing(false);
     setForm(EMPTY_FORM);
   };
 
   // ------- JSON一括追加 -------
   const onImportJson = () => {
+    if (typeof window === "undefined") return;
     try {
       const parsed = JSON.parse(jsonInput);
       const arr = Array.isArray(parsed) ? parsed : [parsed];
@@ -171,7 +171,7 @@ export default function AdminPage() {
       const merged = [...stored, ...sanitized];
       localStorage.setItem("customQuestions", JSON.stringify(merged));
       alert(`✅ ${sanitized.length}件 取り込みました`);
-      saveAutoBackup(); // ✅ 一括追加後もバックアップ
+      saveAutoBackup();
       setJsonInput("");
     } catch {
       alert("❌ JSONの形式が不正です");
@@ -198,12 +198,10 @@ export default function AdminPage() {
           </button>
         </div>
 
-        {/* ID 表示 */}
         {isEditing && form.id != null && (
           <p className="text-xs text-gray-500 mb-3">ID: {form.id}</p>
         )}
 
-        {/* 入力フォーム */}
         <div className="space-y-3">
           <input
             type="text"
@@ -248,7 +246,6 @@ export default function AdminPage() {
             className="border p-2 rounded w-full"
           />
 
-          {/* 画像アップロード */}
           <div>
             <input type="file" accept="image/*" onChange={onUpload} />
             {form.image && (
@@ -271,7 +268,6 @@ export default function AdminPage() {
           </button>
         </div>
 
-        {/* JSON一括追加 */}
         <div className="mt-8">
           <h2 className="font-bold mb-2">🧠 JSONペーストで一括追加</h2>
           <textarea

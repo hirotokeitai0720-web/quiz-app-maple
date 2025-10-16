@@ -1,12 +1,8 @@
 "use client";
-export const dynamic = "force-dynamic";
-export const fetchCache = "force-no-store";
-export const revalidate = false;
-export const runtime = "edge";
 
 import { useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { saveAutoBackup } from "@/utils/backup"; // ✅ 追加！
+import { saveAutoBackup } from "@/utils/backup";
 
 export default function QuizPage() {
   const router = useRouter();
@@ -27,12 +23,20 @@ export default function QuizPage() {
   useEffect(() => {
     const load = async () => {
       try {
-        const base = await fetch("/questions.json").then((r) => r.json()).catch(() => []);
-        const custom = JSON.parse(localStorage.getItem("customQuestions") || "[]");
+        const baseUrl =
+          process.env.NEXT_PUBLIC_SITE_URL || "https://quiz-app-maple-final.vercel.app";
+        const base = await fetch(`${baseUrl}/questions.json`, { cache: "no-store" })
+          .then((r) => r.json())
+          .catch(() => []);
+
+        let custom = [];
+        if (typeof window !== "undefined") {
+          custom = JSON.parse(localStorage.getItem("customQuestions") || "[]");
+        }
         const all = [...base, ...custom];
 
-        // --- 検索演習モード（list から） ---
-        if (mode === "search") {
+        // --- 検索演習モード ---
+        if (typeof window !== "undefined" && mode === "search") {
           const stored = JSON.parse(localStorage.getItem("searchQuestions") || "[]");
           if (stored.length > 0) {
             setQuestions(stored.map((q) => ({ ...q, userAnswer: null })));
@@ -42,7 +46,7 @@ export default function QuizPage() {
         }
 
         // --- 復習モード ---
-        if (mode === "review") {
+        if (typeof window !== "undefined" && mode === "review") {
           const stored = JSON.parse(localStorage.getItem("reviewQuestions") || "[]");
           if (stored.length > 0) {
             setQuestions(stored.map((q) => ({ ...q, userAnswer: null })));
@@ -51,8 +55,8 @@ export default function QuizPage() {
           }
         }
 
-        // --- 一問演習モード（/listから） ---
-        if (selectedId) {
+        // --- 一問演習モード ---
+        if (typeof window !== "undefined" && selectedId) {
           const single = JSON.parse(localStorage.getItem("selectedQuiz") || "null");
           const found = single || all.find((q) => Number(q.id) === Number(selectedId));
           if (found) {
@@ -71,7 +75,7 @@ export default function QuizPage() {
         }
 
         // --- 間違いモード ---
-        if (mode === "missed") {
+        if (typeof window !== "undefined" && mode === "missed") {
           const results = JSON.parse(localStorage.getItem("quizResults") || "[]");
           const missedIds = [...new Set(results.flatMap((r) => r.missed))];
           filtered = all.filter((q) => missedIds.includes(q.id));
@@ -111,9 +115,9 @@ export default function QuizPage() {
     }
   };
 
-  // --- 成績保存（復習モードでは保存しない） ---
+  // --- 成績保存 ---
   const saveResult = (category, score, total, missed) => {
-    if (questions.length <= 1) return;
+    if (questions.length <= 1 || typeof window === "undefined") return;
     const name = prompt("この成績に名前をつけて保存します（例: 夜の復習）") || "無題の演習";
     const prev = JSON.parse(localStorage.getItem("quizResults") || "[]");
     const newResult = {
@@ -126,9 +130,7 @@ export default function QuizPage() {
       date: new Date().toLocaleString(),
     };
     localStorage.setItem("quizResults", JSON.stringify([...prev, newResult]));
-
-    // ✅ 自動バックアップ（成績保存時）
-    saveAutoBackup();
+    saveAutoBackup(); // ✅ 自動バックアップ
   };
 
   // --- 終了処理 ---
@@ -137,10 +139,11 @@ export default function QuizPage() {
       .filter((q) => q.userAnswer !== null && q.userAnswer !== q.answer)
       .map((q) => q.id);
 
-    // 🔹 復習モードのとき
+    if (typeof window === "undefined") return;
+
+    // 🔹 復習モード
     if (mode === "review") {
       setFinished(true);
-      // ✅ 復習で全問正解なら削除提案
       if (score === questions.length) {
         const resultId = Number(params.get("id"));
         const results = JSON.parse(localStorage.getItem("quizResults") || "[]");
@@ -149,9 +152,7 @@ export default function QuizPage() {
           if (confirm("全問正解でした！この回の成績を削除しますか？")) {
             localStorage.setItem("quizResults", JSON.stringify(filtered));
             alert("成績を削除しました 🎉");
-
-             // ✅ 削除後にもバックアップ（上書き）
-            saveAutoBackup();
+            saveAutoBackup(); // ✅ バックアップ更新
           }
         }, 300);
       }
@@ -165,6 +166,7 @@ export default function QuizPage() {
 
   // --- 編集 ---
   const handleEdit = () => {
+    if (typeof window === "undefined") return;
     const q = questions[current];
     localStorage.setItem("editQuestionData", JSON.stringify(q));
     router.push(`/admin?id=${q.id}`);
@@ -172,6 +174,7 @@ export default function QuizPage() {
 
   // --- ⭐ブックマーク登録・解除 ---
   const toggleBookmark = (type) => {
+    if (typeof window === "undefined") return;
     const key = `bookmarks${type}`;
     const list = JSON.parse(localStorage.getItem(key) || "[]");
     const q = questions[current];

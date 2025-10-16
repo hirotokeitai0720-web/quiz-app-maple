@@ -1,15 +1,14 @@
 "use client";
-export const dynamic = "force-dynamic";
-export const fetchCache = "force-no-store";
-export const revalidate = 0;
-export const runtime = "edge";
 
 import { useState } from "react";
 
 export default function SettingsPage() {
   const [status, setStatus] = useState("");
 
+  // ✅ バックアップ処理
   const backupData = () => {
+    if (typeof window === "undefined") return;
+
     const data = {
       customQuestions: JSON.parse(localStorage.getItem("customQuestions") || "[]"),
       quizResults: JSON.parse(localStorage.getItem("quizResults") || "[]"),
@@ -29,9 +28,13 @@ export default function SettingsPage() {
     setStatus("✅ バックアップをダウンロードしました。");
   };
 
+  // ✅ 復元処理
   const restoreData = (e) => {
-    const file = e.target.files[0];
+    if (typeof window === "undefined") return;
+
+    const file = e.target.files?.[0];
     if (!file) return;
+
     const reader = new FileReader();
     reader.onload = (event) => {
       try {

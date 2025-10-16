@@ -1,33 +1,39 @@
 "use client";
-export const dynamic = "force-dynamic";
-export const fetchCache = "force-no-store";
-export const revalidate = false;
-export const runtime = "edge";
 
 import { useEffect, useRef, useState } from "react";
-import { useSearchParams, useRouter } from "next/navigation";
-
+import { useRouter } from "next/navigation";
 
 export default function ResultsPage() {
   const router = useRouter();
   const [results, setResults] = useState([]);
   const [expanded, setExpanded] = useState(null);
   const [questions, setQuestions] = useState([]);
-  const [loaded, setLoaded] = useState(false); // ✅ 読み込み完了フラグ
+  const [loaded, setLoaded] = useState(false);
 
   // ✅ 成績データと問題データの読み込み
   useEffect(() => {
-    try {
-      const stored = JSON.parse(localStorage.getItem("quizResults") || "[]");
-      setResults(Array.isArray(stored) ? stored : []);
-    } catch {
-      setResults([]);
+    // ---- 成績の読み込み ----
+    if (typeof window !== "undefined") {
+      try {
+        const stored = JSON.parse(localStorage.getItem("quizResults") || "[]");
+        setResults(Array.isArray(stored) ? stored : []);
+      } catch {
+        setResults([]);
+      }
     }
 
+    // ---- 問題データ読み込み ----
     const loadQuestions = async () => {
       try {
-        const base = await fetch("/questions.json").then((r) => r.json()).catch(() => []);
-        const custom = JSON.parse(localStorage.getItem("customQuestions") || "[]");
+        const baseUrl =
+          process.env.NEXT_PUBLIC_SITE_URL || "https://quiz-app-maple-final.vercel.app";
+        const base = await fetch(`${baseUrl}/questions.json`, { cache: "no-store" })
+          .then((r) => r.json())
+          .catch(() => []);
+        let custom = [];
+        if (typeof window !== "undefined") {
+          custom = JSON.parse(localStorage.getItem("customQuestions") || "[]");
+        }
         setQuestions([...base, ...custom]);
       } catch {
         setQuestions([]);
@@ -40,6 +46,7 @@ export default function ResultsPage() {
 
   // ✅ 成績削除
   const deleteResult = (id) => {
+    if (typeof window === "undefined") return;
     if (!confirm("この成績を削除しますか？")) return;
     const filtered = results.filter((r) => r.id !== id);
     setResults(filtered);
@@ -48,6 +55,7 @@ export default function ResultsPage() {
 
   // ✅ 復習モード開始
   const startReview = (r) => {
+    if (typeof window === "undefined") return;
     if (!loaded) {
       alert("問題データを読み込み中です。少し待ってください。");
       return;

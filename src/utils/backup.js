@@ -1,15 +1,35 @@
 // src/utils/backup.js
 import { supabase } from "../supabaseClient.js";
 
+// ✅ localStorageを安全に取得するヘルパー
+function safeGet(key) {
+  if (typeof window === "undefined") return [];
+  try {
+    return JSON.parse(localStorage.getItem(key) || "[]");
+  } catch {
+    return [];
+  }
+}
 
+// ✅ localStorageに安全に書き込むヘルパー
+function safeSet(key, value) {
+  if (typeof window === "undefined") return;
+  try {
+    localStorage.setItem(key, JSON.stringify(value));
+  } catch (err) {
+    console.error(`⚠️ localStorage書き込み失敗: ${key}`, err);
+  }
+}
 
 // 🔹 Supabaseにバックアップ保存
 export async function saveAutoBackup() {
+  if (typeof window === "undefined") return; // SSR防止
+
   try {
-    const custom = JSON.parse(localStorage.getItem("customQuestions") || "[]");
-    const results = JSON.parse(localStorage.getItem("quizResults") || "[]");
-    const bookmarks1 = JSON.parse(localStorage.getItem("bookmarks1") || "[]");
-    const bookmarks2 = JSON.parse(localStorage.getItem("bookmarks2") || "[]");
+    const custom = safeGet("customQuestions");
+    const results = safeGet("quizResults");
+    const bookmarks1 = safeGet("bookmarks1");
+    const bookmarks2 = safeGet("bookmarks2");
 
     // 🔸 Supabase に保存（upsert：あれば更新、なければ作成）
     const { error } = await supabase.from("backups").upsert({
@@ -27,6 +47,8 @@ export async function saveAutoBackup() {
 
 // 🔹 Supabaseから復元
 export async function restoreBackup() {
+  if (typeof window === "undefined") return; // SSR防止
+
   try {
     const { data, error } = await supabase
       .from("backups")
@@ -39,10 +61,10 @@ export async function restoreBackup() {
 
     const { custom, results, bookmarks1, bookmarks2 } = data.data;
 
-    localStorage.setItem("customQuestions", JSON.stringify(custom || []));
-    localStorage.setItem("quizResults", JSON.stringify(results || []));
-    localStorage.setItem("bookmarks1", JSON.stringify(bookmarks1 || []));
-    localStorage.setItem("bookmarks2", JSON.stringify(bookmarks2 || []));
+    safeSet("customQuestions", custom || []);
+    safeSet("quizResults", results || []);
+    safeSet("bookmarks1", bookmarks1 || []);
+    safeSet("bookmarks2", bookmarks2 || []);
 
     console.log("📤 Supabase からローカルに復元しました");
   } catch (err) {
