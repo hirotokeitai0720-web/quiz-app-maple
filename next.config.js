@@ -1,15 +1,14 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  output: "standalone", // ← OK: VercelのNodeランタイム対応
-  reactStrictMode: true, // ← ONで安全
-  trailingSlash: false,
+  output: "standalone",
   images: {
     unoptimized: true,
   },
+  trailingSlash: false,
+  reactStrictMode: false,
   experimental: {
-    serverActions: true, // ← こちらが今の推奨設定
+    serverActions: {},
   },
 };
 
-export default nextConfig;
-
+module.exports = nextConfig;
