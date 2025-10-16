@@ -11,7 +11,7 @@ export default function ListPage() {
   const [bookmarkView, setBookmarkView] = useState(null);
   const router = useRouter();
 
-  // ✅ 問題データ読み込み（localStorageガード付き）
+  // ✅ 問題データ読み込み（custom優先マージ）
   useEffect(() => {
     const load = async () => {
       try {
@@ -26,9 +26,14 @@ export default function ListPage() {
           custom = JSON.parse(localStorage.getItem("customQuestions") || "[]");
         }
 
-        setQuestions([...base, ...custom]);
+        // ✅ custom優先・重複ID除外
+        const map = new Map();
+        [...custom, ...base].forEach((q) => map.set(Number(q.id), q));
+        const merged = Array.from(map.values());
+
+        setQuestions(merged);
       } catch (e) {
-        console.error(e);
+        console.error("❌ 読み込み失敗:", e);
       }
     };
     load();
@@ -72,9 +77,9 @@ export default function ListPage() {
   // ✅ 絞り込み処理
   const filtered = questions.filter((q) => {
     const matchKeyword =
-      q.question.includes(keyword) ||
-      q.category.includes(keyword) ||
-      q.explanation.includes(keyword);
+      q.question?.includes(keyword) ||
+      q.category?.includes(keyword) ||
+      q.explanation?.includes(keyword);
     const matchCategory = filter === "すべて" || q.category === filter;
     return matchKeyword && matchCategory;
   });
@@ -88,6 +93,7 @@ export default function ListPage() {
       ? bookmarks2
       : filtered;
 
+  // ✅ 手動バックアップ
   const handleManualBackup = () => {
     if (typeof window === "undefined") return;
     try {
