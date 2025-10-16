@@ -1,12 +1,8 @@
 "use client";
-export const dynamic = "force-dynamic";
-export const fetchCache = "force-no-store";
-export const revalidate = false;
-export const runtime = "edge";
+
 import { useEffect, useRef, useState } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import { saveAutoBackup } from "@/utils/backup";
-
 
 export default function ListPage() {
   const [questions, setQuestions] = useState([]);
@@ -19,7 +15,11 @@ export default function ListPage() {
   useEffect(() => {
     const load = async () => {
       try {
-        const base = await fetch("/questions.json").then((r) => r.json()).catch(() => []);
+        const baseUrl =
+          process.env.NEXT_PUBLIC_SITE_URL || "https://quiz-app-maple-final.vercel.app";
+        const base = await fetch(`${baseUrl}/questions.json`, { cache: "no-store" })
+          .then((r) => r.json())
+          .catch(() => []);
         const custom = JSON.parse(localStorage.getItem("customQuestions") || "[]");
         setQuestions([...base, ...custom]);
       } catch (e) {
