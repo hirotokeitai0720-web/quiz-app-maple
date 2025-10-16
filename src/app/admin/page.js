@@ -2,7 +2,7 @@
 "use client";
 export const dynamic = "force-dynamic";
 export const fetchCache = "force-no-store";
-export const revalidate = 0;
+export const revalidate = false;
 export const dynamicParams = true;
 export const preferredRegion = "auto";
 export const runtime = "edge"; // ✅ ← Vercelで安定動作する
