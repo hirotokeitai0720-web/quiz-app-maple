@@ -1,15 +1,15 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  output: "standalone",   // ← Nodeランタイムで動作
-  experimental: {
-    appDir: true,
-  },
-  // 静的エクスポートではなくSSRを有効化
+  output: "standalone", // ← OK: VercelのNodeランタイム対応
+  reactStrictMode: true, // ← ONで安全
+  trailingSlash: false,
   images: {
     unoptimized: true,
   },
-  trailingSlash: false, // ファイル末尾の「/」による静的化防止
-  reactStrictMode: false,
+  experimental: {
+    serverActions: true, // ← こちらが今の推奨設定
+  },
 };
 
-module.exports = nextConfig;
+export default nextConfig;
+
