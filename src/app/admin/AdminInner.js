@@ -130,13 +130,15 @@ export default function AdminInner() {
     let updated;
 
     if (isEditing && form.id != null) {
+      // ✅ 既存IDを持つ問題を上書き更新
       updated = stored.map((q) =>
         Number(q.id) === Number(form.id)
-          ? { ...form, options: normalizeOptions(form.options) }
+          ? { ...form, id: Number(form.id), options: normalizeOptions(form.options) }
           : q
       );
       alert("✏️ 問題を更新しました！");
     } else {
+      // ✅ 新規追加
       const newQ = {
         ...form,
         id: Date.now(),
@@ -146,10 +148,17 @@ export default function AdminInner() {
       alert("✅ 新しい問題を追加しました！");
     }
 
+    // ✅ localStorage保存 & バックアップ
     localStorage.setItem("customQuestions", JSON.stringify(updated));
+    localStorage.removeItem("editQuestionData");
     saveAutoBackup();
+
+    // ✅ 画面をリセットして再読込（即反映）
     setIsEditing(false);
     setForm(EMPTY_FORM);
+    setTimeout(() => {
+      window.location.reload();
+    }, 300);
   };
 
   // ------- JSON一括追加 -------
