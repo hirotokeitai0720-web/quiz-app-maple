@@ -52,7 +52,7 @@ export default function AdminInner() {
           .then((r) => r.json())
           .catch(() => []);
         const custom = JSON.parse(localStorage.getItem("customQuestions") || "[]");
-        const all = [...base, ...custom];
+        const all = [...custom, ...base]; // ✅ customを優先
 
         let picked = null;
         if (editIdParam) {
@@ -130,12 +130,19 @@ export default function AdminInner() {
     let updated;
 
     if (isEditing && form.id != null) {
-      // ✅ 既存IDを持つ問題を上書き更新
-      updated = stored.map((q) =>
-        Number(q.id) === Number(form.id)
-          ? { ...form, id: Number(form.id), options: normalizeOptions(form.options) }
-          : q
-      );
+      const exists = stored.some((q) => Number(q.id) === Number(form.id));
+
+      if (exists) {
+        // ✅ 既存問題を上書き
+        updated = stored.map((q) =>
+          Number(q.id) === Number(form.id)
+            ? { ...form, id: Number(form.id), options: normalizeOptions(form.options) }
+            : q
+        );
+      } else {
+        // ✅ base問題をcustomにコピーして編集反映
+        updated = [...stored, { ...form, id: Number(form.id), options: normalizeOptions(form.options) }];
+      }
       alert("✏️ 問題を更新しました！");
     } else {
       // ✅ 新規追加
@@ -153,7 +160,10 @@ export default function AdminInner() {
     localStorage.removeItem("editQuestionData");
     saveAutoBackup();
 
-    // ✅ 画面をリセットして再読込（即反映）
+    // ✅ 他タブ反映トリガー
+    window.dispatchEvent(new Event("storage"));
+
+    // ✅ 即リロード
     setIsEditing(false);
     setForm(EMPTY_FORM);
     setTimeout(() => {
