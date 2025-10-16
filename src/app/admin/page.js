@@ -47,7 +47,11 @@ export default function AdminPage() {
 
     (async () => {
       try {
-        const base = await fetch("/questions.json").then((r) => r.json()).catch(() => []);
+       const baseUrl =
+         process.env.NEXT_PUBLIC_SITE_URL || "https://quiz-app-maple-final.vercel.app";
+       const base = await fetch(`${baseUrl}/questions.json`, { cache: "no-store" })
+        .then((r) => r.json())
+        .catch(() => []);
         const custom = JSON.parse(localStorage.getItem("customQuestions") || "[]");
         const all = [...base, ...custom];
 
