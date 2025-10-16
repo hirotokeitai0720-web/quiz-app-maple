@@ -1,9 +1,8 @@
+// next.config.js
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   output: "standalone",
-  images: {
-    unoptimized: true,
-  },
+  images: { unoptimized: true },
   trailingSlash: false,
   reactStrictMode: false,
   experimental: {
@@ -11,4 +10,4 @@ const nextConfig = {
   },
 };
 
-module.exports = nextConfig;
+export default nextConfig;
