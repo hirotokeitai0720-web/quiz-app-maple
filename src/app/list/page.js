@@ -1,17 +1,17 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
-import { useSearchParams, useRouter } from "next/navigation";
+import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
 import { saveAutoBackup } from "@/utils/backup";
 
 export default function ListPage() {
   const [questions, setQuestions] = useState([]);
   const [keyword, setKeyword] = useState("");
   const [filter, setFilter] = useState("すべて");
-  const [bookmarkView, setBookmarkView] = useState(null); // ⭐① or ⭐② の切替
+  const [bookmarkView, setBookmarkView] = useState(null);
   const router = useRouter();
 
-  // ✅ 問題データ読み込み
+  // ✅ 問題データ読み込み（localStorageガード付き）
   useEffect(() => {
     const load = async () => {
       try {
@@ -20,7 +20,12 @@ export default function ListPage() {
         const base = await fetch(`${baseUrl}/questions.json`, { cache: "no-store" })
           .then((r) => r.json())
           .catch(() => []);
-        const custom = JSON.parse(localStorage.getItem("customQuestions") || "[]");
+
+        let custom = [];
+        if (typeof window !== "undefined") {
+          custom = JSON.parse(localStorage.getItem("customQuestions") || "[]");
+        }
+
         setQuestions([...base, ...custom]);
       } catch (e) {
         console.error(e);
@@ -31,18 +36,21 @@ export default function ListPage() {
 
   // ✅ 編集
   const handleEdit = (q) => {
+    if (typeof window === "undefined") return;
     localStorage.setItem("editQuestionData", JSON.stringify(q));
     router.push(`/admin?id=${q.id}`);
   };
 
   // ✅ 単一演習
   const handlePlay = (q) => {
+    if (typeof window === "undefined") return;
     localStorage.setItem("selectedQuiz", JSON.stringify(q));
     router.push(`/quiz?id=${q.id}`);
   };
 
   // ✅ 検索結果で一括演習
   const handlePlayAll = () => {
+    if (typeof window === "undefined") return;
     if (filtered.length === 0) {
       alert("該当する問題がありません。");
       return;
@@ -51,14 +59,15 @@ export default function ListPage() {
     router.push("/quiz?mode=search");
   };
 
-  // ✅ ブックマークの切替
-  const handleBookmarkView = (type) => {
-    setBookmarkView(type === bookmarkView ? null : type);
-  };
-
-  // ✅ 全ブックマーク読み込み
-  const bookmarks1 = JSON.parse(localStorage.getItem("bookmarks1") || "[]");
-  const bookmarks2 = JSON.parse(localStorage.getItem("bookmarks2") || "[]");
+  // ✅ ブックマーク
+  const bookmarks1 =
+    typeof window !== "undefined"
+      ? JSON.parse(localStorage.getItem("bookmarks1") || "[]")
+      : [];
+  const bookmarks2 =
+    typeof window !== "undefined"
+      ? JSON.parse(localStorage.getItem("bookmarks2") || "[]")
+      : [];
 
   // ✅ 絞り込み処理
   const filtered = questions.filter((q) => {
@@ -72,7 +81,6 @@ export default function ListPage() {
 
   const categories = ["すべて", ...new Set(questions.map((q) => q.category))];
 
-  // ✅ 表示リスト切り替え
   const displayList =
     bookmarkView === 1
       ? bookmarks1
@@ -80,8 +88,8 @@ export default function ListPage() {
       ? bookmarks2
       : filtered;
 
-  // ✅ 手動バックアップ処理
   const handleManualBackup = () => {
+    if (typeof window === "undefined") return;
     try {
       saveAutoBackup();
       alert("💾 バックアップを保存しました！");
@@ -115,7 +123,9 @@ export default function ListPage() {
 
           <div className="flex gap-1">
             <button
-              onClick={() => handleBookmarkView(1)}
+              onClick={() =>
+                setBookmarkView(bookmarkView === 1 ? null : 1)
+              }
               className={`px-3 py-2 rounded ${
                 bookmarkView === 1 ? "bg-yellow-400 text-white" : "bg-yellow-100"
               }`}
@@ -123,7 +133,9 @@ export default function ListPage() {
               ⭐①
             </button>
             <button
-              onClick={() => handleBookmarkView(2)}
+              onClick={() =>
+                setBookmarkView(bookmarkView === 2 ? null : 2)
+              }
               className={`px-3 py-2 rounded ${
                 bookmarkView === 2 ? "bg-orange-400 text-white" : "bg-orange-100"
               }`}
