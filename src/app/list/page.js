@@ -1,7 +1,8 @@
 "use client";
-import { useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
-import { saveAutoBackup } from "@/utils/backup"; // ✅ バックアップ機能を呼び出す
+export const dynamic = "force-dynamic";
+export const fetchCache = "force-no-store";
+export const revalidate = 0;
+export const runtime = "edge";
 
 export default function ListPage() {
   const [questions, setQuestions] = useState([]);
